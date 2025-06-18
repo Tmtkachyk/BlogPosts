@@ -1,0 +1,79 @@
+# How to Package and Deploy Git for Windows Using Intune Win32 Apps
+
+Managing software installations across an organization can be challenging — especially when you want to ensure everyone is running the latest, secure version of a developer tool like **Git for Windows**. Microsoft Intune provides a powerful way to deploy, update, and manage Win32 apps across your Windows devices. In this post, I’ll walk you through how to package Git using the Microsoft Win32 Content Prep Tool and deploy it with Intune.
+
+---
+
+## Why Deploy Git via Intune Win32 Apps?
+
+- **Centralized control:** Install or update Git silently on all targeted devices.
+- **Version control:** Easily upgrade or replace older Git versions.
+- **Better detection:** Ensure the app installs correctly by using detection rules.
+- **Automation:** Avoid manual installs and reduce support tickets.
+
+---
+
+## Step 1: Download the Git Installer
+
+First, download the latest **64-bit** Git installer for Windows from the official site:
+
+[https://git-scm.com/download/win](https://git-scm.com/download/win)
+
+Make sure to pick the **64-bit** version for compatibility with modern Windows devices.
+
+---
+
+## Step 2: Prepare the `.intunewin` Package
+
+Microsoft provides the **Win32 Content Prep Tool** to wrap your installer files into an `.intunewin` package that Intune can deploy.
+
+- Download the tool from the [official Microsoft repository](https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool).
+- Run the tool and specify:
+  - **Source folder:** The folder containing your Git installer `.exe`
+  - **Setup file:** The Git installer filename (e.g., `Git-2.44.0-64-bit.exe`)
+  - **Output folder:** Where the `.intunewin` package will be created
+
+Example command:
+
+```bash
+IntuneWinAppUtil.exe -c C:\GitInstaller -s Git-2.44.0-64-bit.exe -o C:\IntunePackages
+
+
+## Step 3: Configure the Intune Win32 App Deployment
+
+In the Microsoft Endpoint Manager portal:
+
+1. Go to **Apps > Windows > Add** and choose **Windows app (Win32)**.
+2. Upload your `.intunewin` package.
+3. Configure the **install command** as:Git-2.44.0-64-bit.exe /VERYSILENT /NORESTART
+4. Configure the **uninstall command** as:%ProgramFiles%\Git\unins000.exe /VERYSILENT /NORESTART
+
+
+5. For **detection rules**, choose **Manually configure detection rules**:
+- Rule type: `File`
+- Path: `%ProgramFiles%\Git`
+- File or folder: `git-bash.exe`
+- Detection method: `File or folder exists`
+
+6. Leave **“Associated with a 32-bit app on 64-bit clients”** unchecked (since Git is 64-bit).
+
+7. Set **Requirements** to:
+- OS architecture: `64-bit`
+- Minimum OS: `Windows 10 1903` or later
+
+8. Assign the app to device groups as needed.
+
+---
+
+## Step 4: Test and Monitor Deployment
+
+Once assigned, the Git installer will deploy silently on targeted devices.
+
+- Devices will detect Git’s presence via the detection rule.
+- If an older Git version exists and you want to upgrade, use **Supersedence** in Intune to replace the older package automatically.
+- Monitor installation reports in Intune to track success or failures.
+
+
+
+
+
